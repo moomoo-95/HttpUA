@@ -4,8 +4,8 @@ import instance.BaseEnvironment;
 import instance.DebugLevel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import network.definition.DestinationRecord;
 import network.definition.GroupEndpointId;
 import network.definition.NetAddress;
@@ -97,9 +97,8 @@ public class GroupSocket { // SEND-ONLY
                     baseEnvironment,
                     sessionId,
                     netInterface.getThreadCount(),
-                    netInterface.getSendBufSize(),
                     netInterface.getRecvBufSize(),
-                    (ChannelInitializer<SocketChannel>) channelHandler
+                    (ChannelInitializer<NioSocketChannel>) channelHandler
             );
         } else {
             nettyChannel = new NettyUdpChannel(

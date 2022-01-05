@@ -5,6 +5,7 @@ import instance.DebugLevel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import network.handler.ClientHandler;
 import network.handler.ServerHandler;
 import network.socket.GroupSocket;
@@ -20,8 +21,8 @@ public class NetworkTest {
 
     @Test
     public void test() {
-        socketNormalTest();
-        tcpSocketRecvOnlyTest();
+        //socketNormalTest();
+        tcpSocketTest();
     }
 
     public void socketNormalTest() {
@@ -94,7 +95,7 @@ public class NetworkTest {
         baseEnvironment.stop();
     }
 
-    public void tcpSocketRecvOnlyTest() {
+    public void tcpSocketTest() {
         // 인스턴스 생성
         BaseEnvironment baseEnvironment = new BaseEnvironment(
                 new ScheduleManager(),
@@ -115,9 +116,9 @@ public class NetworkTest {
         NetAddress netAddress1 = new NetAddress("127.0.0.1", 5000,true, SocketProtocol.TCP);
 
         // Netty Channel Initializer 생성
-        ChannelInitializer<NioDatagramChannel> serverChannelInitializer = new ChannelInitializer<NioDatagramChannel>() {
+        ChannelInitializer<NioSocketChannel> serverChannelInitializer = new ChannelInitializer<NioSocketChannel>() {
             @Override
-            protected void initChannel(NioDatagramChannel nioDatagramChannel) {
+            protected void initChannel(NioSocketChannel nioDatagramChannel) {
                 final ChannelPipeline channelPipeline = nioDatagramChannel.pipeline();
                 channelPipeline.addLast(new ServerHandler());
             }
@@ -132,9 +133,6 @@ public class NetworkTest {
         Assert.assertTrue(groupSocket1.getListenSocket().openListenChannel());
         baseEnvironment.printMsg("GROUP-SOCKET1: {%s}", groupSocket1.toString());
         //
-
-        // Check Recv-only
-        Assert.assertTrue(groupSocket1.getListenSocket().isListenChannelRecvOnly());
     }
 
 }

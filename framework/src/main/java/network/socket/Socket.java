@@ -6,6 +6,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import network.definition.NetAddress;
 import network.definition.NetInterface;
 import network.socket.netty.NettyChannel;
@@ -34,9 +35,8 @@ public class Socket {
                     baseEnvironment,
                     0,
                     netInterface.getThreadCount(),
-                    netInterface.getSendBufSize(),
                     netInterface.getRecvBufSize(),
-                    (ChannelInitializer<SocketChannel>) channelHandler
+                    (ChannelInitializer<NioSocketChannel>) channelHandler
             );
         } else {
             nettyChannel = new NettyUdpChannel(
@@ -66,10 +66,6 @@ public class Socket {
             return false;
         }
         return true;
-    }
-
-    public boolean isListenChannelRecvOnly() {
-        return nettyChannel.isRecvOnly();
     }
 
     public void closeListenChannel() {

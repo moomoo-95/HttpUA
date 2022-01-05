@@ -3,14 +3,12 @@ package network.socket.netty.tcp;
 import instance.BaseEnvironment;
 import instance.DebugLevel;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import network.socket.netty.NettyChannel;
 
 import java.net.InetAddress;
@@ -20,44 +18,25 @@ public class NettyTcpChannel extends NettyChannel {
 
     ////////////////////////////////////////////////////////////
     // VARIABLES
-    private final EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
-    private ServerBootstrap serverBootstrap;
-    private Bootstrap bootstrap = null;
+    private final EventLoopGroup eventLoopGroup;
+    private final Bootstrap bootstrap;
     private Channel listenChannel = null;
     private Channel connectChannel = null;
     ////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////
     // CONSTRUCTOR
-    public NettyTcpChannel(BaseEnvironment baseEnvironment, long sessionId, int threadCount, int sendBufSize, int recvBufSize, ChannelInitializer<SocketChannel> childHandler) {
-        super(baseEnvironment, sessionId, threadCount, sendBufSize, recvBufSize);
+    public NettyTcpChannel(BaseEnvironment baseEnvironment, long sessionId, int threadCount, int recvBufSize, ChannelInitializer<NioSocketChannel> childHandler) {
+        super(baseEnvironment, sessionId, threadCount, 0, recvBufSize);
 
-        bossGroup = new NioEventLoopGroup();
-        if (sendBufSize == 0) {
-            workerGroup = new NioEventLoopGroup();
-            serverBootstrap = new ServerBootstrap();
-
-            serverBootstrap.group(bossGroup, workerGroup);
-            serverBootstrap.channel(NioServerSocketChannel.class)
-                    .option(ChannelOption.SO_RCVBUF, recvBufSize)
-                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .option(ChannelOption.SO_REUSEADDR, true)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                    .childHandler(childHandler);
-            bootstrap = null;
-            baseEnvironment.printMsg("[%s] NettyTcpChannel is recv-only type.", sessionId);
-        } else {
-            bootstrap.group(bossGroup).channel(SocketChannel.class)
-                    .option(ChannelOption.SO_BROADCAST, false)
-                    .option(ChannelOption.SO_SNDBUF, sendBufSize)
-                    .option(ChannelOption.SO_RCVBUF, recvBufSize)
-                    .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .option(ChannelOption.SO_REUSEADDR, true)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                    .handler(childHandler);
-            baseEnvironment.printMsg("[%s] NettyTcpChannel is send & recv type.", sessionId);
-        }
+        bootstrap = new Bootstrap();
+        eventLoopGroup = new NioEventLoopGroup();
+        bootstrap.group(eventLoopGroup).channel(NioSocketChannel.class)
+                .option(ChannelOption.SO_RCVBUF, recvBufSize)
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.SO_REUSEADDR, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
+                .handler(childHandler);
     }
     ////////////////////////////////////////////////////////////
 
@@ -69,8 +48,7 @@ public class NettyTcpChannel extends NettyChannel {
         getSendBuf().clear();
         closeConnectChannel();
         closeListenChannel();
-        bossGroup.shutdownGracefully();
-        workerGroup.shutdownGracefully();
+        eventLoopGroup.shutdownGracefully();
     }
 
     @Override
@@ -91,7 +69,7 @@ public class NettyTcpChannel extends NettyChannel {
         }
 
         try {
-            channelFuture = serverBootstrap.bind(address, port).sync();
+            channelFuture = bootstrap.bind(address, port).sync();
             this.listenChannel = channelFuture.channel();
             getBaseEnvironment().printMsg("Channel is opened. (ip=%s, port=%s)", address, port);
 
@@ -139,11 +117,6 @@ public class NettyTcpChannel extends NettyChannel {
 
         ByteBuf buf = Unpooled.copiedBuffer(data);
         connectChannel.writeAndFlush(buf);
-    }
-
-    @Override
-    public boolean isRecvOnly() {
-        return bootstrap == null;
     }
     ////////////////////////////////////////////////////////////
 

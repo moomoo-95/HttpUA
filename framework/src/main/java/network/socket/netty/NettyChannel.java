@@ -96,8 +96,6 @@ public class NettyChannel {
     public void closeConnectChannel() {}
 
     public void sendData(byte[] data, int dataLength) {}
-
-    public boolean isRecvOnly() { return false; }
     ////////////////////////////////////////////////////////////
 
 }
